@@ -17,10 +17,13 @@
             <ul class="list-group">
               <li class="list-group-item" v-for="domain in domains" v-bind:key="domain.name">
                 <div class="row">
-                  <div class="col-md">
+                  <div class="col-md-6">
                     {{ domain.name }}
-                  </div>
-                  <div class="col-md text-right">
+									</div>
+									<div class="col-md-3">
+										<span class="badge badge-info"> {{ (domain.available) ? "Disponível" : "Não Disponível" }} </span>
+									</div>
+                  <div class="col-md-3 text-right">
                     <a class="btn btn-info" v-bind:href="domain.checkout" target="_blank">
                       <span class="fa fa-shopping-cart"></span>
                     </a>
@@ -49,7 +52,8 @@ export default {
 			items: {
 				prefix: [],
 				sufix: []
-			}
+			},
+			domains: [],
 		};
 	},
 	methods: {
@@ -75,6 +79,7 @@ export default {
 				const query = res.data;
 				const newItem = query.data.newItem;
 				this.items[item.type].push(newItem);
+				this.gerenateDomains();
 			});
 		},
 		deleteItem(item) {
@@ -92,11 +97,12 @@ export default {
 					}
 				}
 			}).then(() => {
-				this.getItems(item.type);
+				this.items[item.type].splice(this.items[item.type].indexOf(item), 1);
+				this.generateDomains();
 			});
 		},
 		getItems(type) {
-			axios({
+			return axios({
 				url: "http://localhost:4000",
 				method: "post",
 				data: {
@@ -118,27 +124,35 @@ export default {
 				this.items[type] = query.data.items;
 			});
 		},
-	},
-	computed: {
-		domains() {
-			const domains = [];
-			for (const prefix of this.items.prefix) {
-				for (const sufix of this.items.sufix) {
-					const name = prefix.description + sufix.description;
-					const url = name.toLowerCase();
-					const checkout = `https://checkout.hostgator.com.br/?a=add&sld=${url}&tld=.com.br`;
-					domains.push({
-						name,
-						checkout
-					});
+		generateDomains() {
+			axios({
+				url: "http://localhost:4000",
+				method: "post",
+				data: {
+					query: `
+						mutation {
+							domains: generateDomains {
+								name
+								checkout
+								available
+							}
+						}
+					`
 				}
-			}
-			return domains;
-		}
+			}).then((res) => {
+				const query = res.data;
+				this.domains = query.data.domains;
+			});
+		},
 	},
 	created() {
-		this.getItems("prefix");
-		this.getItems("sufix");
+		Promise.all([
+			this.getItems("prefix"),
+			this.getItems("sufix")
+		]).then(() => {
+			this.generateDomains();
+		});
+
 	}
 };
 </script>
