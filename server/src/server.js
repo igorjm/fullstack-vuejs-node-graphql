@@ -12,6 +12,7 @@ const typeDefs = `
     name: String
     checkout: String
     available: Boolean
+    extension: String
   }
 
   type Query {
@@ -26,7 +27,8 @@ const typeDefs = `
   type Mutation {
     saveItem (item: ItemInput): Item
     deleteItem (id: Int): Boolean
-    gerenateDomains: [Domain]
+    generateDomains: [Domain]
+    generateDomain(name: String): [Domain]
   }
 
 `;
@@ -75,7 +77,7 @@ const resolvers = {
 
       return true
     },
-    async gerenateDomains() {
+    async generateDomains() {
       const domains = [];
 			for (const prefix of items.filter(item => item.type === "prefix")) {
 				for (const sufix of items.filter(item => item.type === "sufix")) {
@@ -89,6 +91,23 @@ const resolvers = {
             available
 					});
 				}
+      }
+      return domains;
+    },
+    async generateDomain(_, args) {
+      const name = args.name;
+      const domains = []
+      const extensions = [".com.br", ".com", ".net", ".org"];
+      for(const extension of extensions) {
+					const url = name.toLowerCase();
+          const checkout = `https://checkout.hostgator.com.br/?a=add&sld=${url}&tld=${extension}`;
+          const available = await isDomainAvailable(`${url}${extension}`);
+					domains.push({
+						name,
+            checkout,
+            available,
+            extension
+					});
       }
       return domains;
     }
