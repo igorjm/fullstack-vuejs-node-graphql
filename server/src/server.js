@@ -1,6 +1,6 @@
 const { ApolloServer } = require("apollo-server");
 const dns = require('dns');
-const service = require('./service');
+const service = require('./config/service');
 
 const typeDefs = `
   type Item {
